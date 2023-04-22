@@ -22,7 +22,7 @@
 
 void usage(char *programName)
 {
-    printf("Usage: %s -a <attestation-endpoint> -n <optional-nonce> -k KEK -c <optional-imds-client-id> -s symkey|base64(wrappedSymKey) -w|-u (Wrap|Unwrap) \n", programName);
+    printf("Usage: %s -a <attestation-endpoint> -n <optional-nonce> -k KEK -c (imds|sp) -s symkey|base64(wrappedSymKey) -w|-u (Wrap|Unwrap) \n", programName);
 }
 
 enum class Operation

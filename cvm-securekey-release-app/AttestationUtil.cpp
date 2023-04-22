@@ -214,11 +214,14 @@ std::string Util::GetIMDSToken(std::string client_id)
 
     curl_easy_cleanup(curl);
 
-    TRACE_OUT("Response: %s\n", responseStr.c_str());
+    json json_object = json::parse(responseStr.c_str());
+    std::string access_token = json_object["access_token"].get<std::string>();
+
+    TRACE_OUT("Response: %s\n", access_token.c_str());
 
     TRACE_OUT("Exiting Util::GetIMDSToken()");
 
-    return responseStr;
+    return access_token;
 }
 
 /// \copydoc Util::GetAADToken()
@@ -623,11 +626,10 @@ bool Util::doSKR(const std::string &attestation_url, const std::string &nonce, s
         std::string attest_token(Util::GetMAAToken(attestation_url, nonce));
         TRACE_OUT("MAA Token: %s", attest_token.c_str());
 
-        // std::string akvMsiToken = std::move(Util::GetIMDSToken(client_id));
-        std::string akvMsiToken = std::move(Util::GetAADToken());
-        TRACE_OUT("AkvMsiToken: %s", akvMsiToken.c_str());
-        json json_object = json::parse(akvMsiToken.c_str());
-        std::string access_token = json_object["access_token"].get<std::string>();
+        // std::string access_token = std::move(Util::GetIMDSToken(client_id));
+        std::string access_token = std::move(Util::GetAADToken());
+        TRACE_OUT("AkvMsiAccessToken: %s", access_token.c_str());
+
         std::string requestUri = Util::GetKeyVaultSKRurl(KEKUrl);
         std::string responseStr = Util::GetKeyVaultResponse(requestUri, access_token, attest_token, nonce);
 
