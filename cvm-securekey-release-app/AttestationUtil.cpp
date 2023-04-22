@@ -7,6 +7,7 @@
 
 // TODO: Use OPENSSL_cleanse(buffer, sizeof(buffer)) to clear sensitive data from memory.
 
+#include <cstdlib>
 #include <ctime>
 #include <thread>
 #include <vector>
@@ -14,6 +15,7 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <azure/identity.hpp>
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
@@ -218,6 +220,25 @@ std::string Util::GetIMDSToken(std::string client_id)
     TRACE_OUT("Exiting Util::GetIMDSToken()");
 
     return responseStr;
+}
+
+/// \copydoc Util::GetIMDSToken()
+std::string Util::GetAADToken()
+{
+    TRACE_OUT("Entering Util::GetAADToken()");
+
+    auto clientId = std::getenv("AKV_SKR_CLIENT_ID");
+    auto clientSecret = std::getenv("AKV_SKR_CLIENT_SECRET");
+    auto tenantId = std::getenv("AKV_SKR_TENANT_ID");
+
+    auto credential = std::make_shared<Azure::Identity::ClientSecretCredential>(tenantId, clientId, clientSecret);
+    auto scope = "https://vault.azure.net/.default";
+    auto token = credential.GetToken(scope).Token();
+
+    TRACE_OUT("Response: %s\n", token);
+    TRACE_OUT("Exiting Util::GetAADToken()");
+
+    return token;
 }
 
 /// \copydoc Util::GetMAAToken()
@@ -566,7 +587,8 @@ bool Util::doSKR(const std::string &attestation_url, const std::string &nonce, s
         std::string attest_token(Util::GetMAAToken(attestation_url, nonce));
         TRACE_OUT("MAA Token: %s", attest_token.c_str());
 
-        std::string akvMsiToken = std::move(Util::GetIMDSToken(client_id));
+        // std::string akvMsiToken = std::move(Util::GetIMDSToken(client_id));
+        std::string akvMsiToken = std::move(Util::GetAADToken());
         TRACE_OUT("AkvMsiToken: %s", akvMsiToken.c_str());
         json json_object = json::parse(akvMsiToken.c_str());
         std::string access_token = json_object["access_token"].get<std::string>();

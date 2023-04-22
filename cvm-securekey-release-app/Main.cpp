@@ -33,6 +33,12 @@ enum class Operation
     Undefined
 };
 
+enum class AkvCredentialSource
+{
+    IMDS,
+    EnvServicePrincipal
+};
+
 int main(int argc, char *argv[])
 {
     TRACE_OUT("Main started");
@@ -43,6 +49,7 @@ int main(int argc, char *argv[])
     std::string key_enc_key_url;
     std::string client_id;
     Operation op = Operation::None;
+    AkvCredentialSource akvCredentialSource = AkvCredential::EnvServicePrincipal;
 
     int opt;
     while ((opt = getopt(argc, argv, "a:n:k:c:s:uw")) != -1)

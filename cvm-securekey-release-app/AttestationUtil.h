@@ -149,6 +149,12 @@ public:
     /// <returns>MSI token for the resource</returns>
     static std::string GetIMDSToken(std::string client_id = "");
 
+    // <summary>
+    /// Retrieve MSI token from Service Principal Credentials available in the Environment Variables
+    /// </summary>
+    /// <returns>MSI token for the resource</returns>
+    static std::string Util::GetAADToken();
+
     /// <summary>
     /// Get attestation token from the attestation service.
     /// </summary>
