@@ -13,21 +13,6 @@ endif()
 
 add_definitions (-DPLATFORM_UNIX)
 
-include(FetchContent)
-FetchContent_Declare(
-    azuresdk
-    GIT_REPOSITORY      https://github.com/Azure/azure-sdk-for-cpp.git
-    GIT_TAG             azure-identity_1.5.0-beta.2
-)
-FetchContent_GetProperties(azuresdk)
-if(NOT azuresdk_POPULATED)
-    FetchContent_Populate(azuresdk)
-    # Adding all Azure SDK libraries
-    # add_subdirectory(${azuresdk_SOURCE_DIR} ${azuresdk_BINARY_DIR} EXCLUDE_FROM_ALL)
-    # Adding one Azure SDK Library only (Storage blobs)
-    add_subdirectory(${azuresdk_SOURCE_DIR}/sdk/identity/azure-identity ${azuresdk_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-
 include_directories(
      /usr/include/azguestattestation1
      /usr/include/jsoncpp
