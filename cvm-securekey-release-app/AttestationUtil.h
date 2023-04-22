@@ -153,7 +153,7 @@ public:
     /// Retrieve MSI token from Service Principal Credentials available in the Environment Variables
     /// </summary>
     /// <returns>MSI token for the resource</returns>
-    static std::string Util::GetAADToken();
+    static std::string GetAADToken();
 
     /// <summary>
     /// Get attestation token from the attestation service.
