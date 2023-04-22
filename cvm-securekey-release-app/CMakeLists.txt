@@ -29,5 +29,4 @@ add_executable(${CMAKE_PROJECT_TARGET}
     Main.cpp
 )
 
-find_package(azure-identity-cpp CONFIG REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_TARGET} azguestattestation curl jsoncpp PRIVATE Azure::azure-identity)
+target_link_libraries(${CMAKE_PROJECT_TARGET} azguestattestation curl jsoncpp)

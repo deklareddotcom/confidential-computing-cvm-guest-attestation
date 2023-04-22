@@ -15,7 +15,6 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
-#include <azure/identity.hpp>
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
@@ -222,7 +221,7 @@ std::string Util::GetIMDSToken(std::string client_id)
     return responseStr;
 }
 
-/// \copydoc Util::GetIMDSToken()
+/// \copydoc Util::GetAADToken()
 std::string Util::GetAADToken()
 {
     TRACE_OUT("Entering Util::GetAADToken()");
@@ -231,14 +230,51 @@ std::string Util::GetAADToken()
     auto clientSecret = std::getenv("AKV_SKR_CLIENT_SECRET");
     auto tenantId = std::getenv("AKV_SKR_TENANT_ID");
 
-    auto credential = std::make_shared<Azure::Identity::ClientSecretCredential>(tenantId, clientId, clientSecret);
-    auto scope = "https://vault.azure.net/.default";
-    auto token = credential.GetToken(scope).Token();
+    std::string tokenUrl = "https://login.microsoftonline.com/" + std::string(tenantId) + "/oauth2/v2.0/token";
+    std::string postData = "client_id=" + std::string(clientId) + "&client_secret=" + std::string(clientSecret) + "&grant_type=client_credentials&scope=https://vault.azure.net/.default";
 
-    TRACE_OUT("Response: %s\n", token);
-    TRACE_OUT("Exiting Util::GetAADToken()");
+    CURL *curl = curl_easy_init();
+    if (curl)
+    {
+        curl_easy_setopt(curl, CURLOPT_URL, tokenUrl.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, postData.length());
 
-    return token;
+        curl_slist *headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+        std::string response;
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        CURLcode result = curl_easy_perform(curl);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+
+        if (result == CURLE_OK)
+        {
+            // Parse the access token from the response
+            std::string token;
+            size_t pos = response.find("\"access_token\":\"");
+            if (pos != std::string::npos)
+            {
+                pos += 16;
+                size_t endPos = response.find('"', pos);
+                if (endPos != std::string::npos)
+                {
+                    token = response.substr(pos, endPos - pos);
+                }
+            }
+
+            TRACE_OUT("Response: %s\n", token.c_str());
+            TRACE_OUT("Exiting Util::GetAADToken()");
+            return token;
+        }
+    }
+
+    std::cerr << "Failed to obtain AKV AAD token" << std::endl;
+    exit(-1);
 }
 
 /// \copydoc Util::GetMAAToken()
