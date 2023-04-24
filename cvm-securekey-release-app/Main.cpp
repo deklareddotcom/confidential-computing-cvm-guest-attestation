@@ -62,14 +62,13 @@ int main(int argc, char *argv[])
             TRACE_OUT("key_enc_key_url: %s", key_enc_key_url.c_str());
             break;
         case 'c':
-            switch (optarg)
+            if (optarg == 'imds')
             {
-            case "imds":
                 akv_credential_source = Util::AkvCredentialSource::Imds;
-                break;
-            case "sp":
+            }
+            else if (optarg == 'sp')
+            {
                 akv_credential_source = Util::AkvCredentialSource::EnvServicePrincipal;
-                break;
             }
             TRACE_OUT("akv_credential_source: %d", static_cast<int>(op));
             break;
