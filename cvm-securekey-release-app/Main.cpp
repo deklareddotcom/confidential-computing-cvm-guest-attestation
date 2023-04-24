@@ -62,15 +62,15 @@ int main(int argc, char *argv[])
             TRACE_OUT("key_enc_key_url: %s", key_enc_key_url.c_str());
             break;
         case 'c':
-            if (optarg == 'imds')
+            if (strcmp(optarg, "imds") == 0)
             {
                 akv_credential_source = Util::AkvCredentialSource::Imds;
             }
-            else if (optarg == 'sp')
+            else if (strcmp(optarg, "sp") == 0)
             {
                 akv_credential_source = Util::AkvCredentialSource::EnvServicePrincipal;
             }
-            TRACE_OUT("akv_credential_source: %d", static_cast<int>(op));
+            TRACE_OUT("akv_credential_source: %d", static_cast<int>(akv_credential_source));
             break;
         case 'u':
             op = Operation::UnwrapKey;
