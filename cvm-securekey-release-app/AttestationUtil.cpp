@@ -149,13 +149,14 @@ size_t Util::CurlWriteCallback(char *data, size_t size, size_t nmemb, std::strin
 /// Retrieve IMDS token retrieval URL for a resource url.
 /// If multiple identities are associated, client_id can be used to select one identity
 /// eg, "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fvault.azure.net"};
-static inline std::string GetImdsTokenUrl(std::string url, std::string client_id = "")
+static inline std::string GetImdsTokenUrl(std::string url)
 {
     std::ostringstream oss;
     oss << Constants::IMDS_TOKEN_URL;
     oss << "?api-version=" << Constants::IMDS_API_VERSION;
     oss << "&resource=" << Util::url_encode(url);
 
+    auto clientId = std::getenv("IMDS_CLIENT_ID");
     if (!client_id.empty())
     {
         oss << "&client_id=" << client_id;
@@ -165,7 +166,7 @@ static inline std::string GetImdsTokenUrl(std::string url, std::string client_id
 }
 
 /// \copydoc Util::GetIMDSToken()
-std::string Util::GetIMDSToken(std::string client_id)
+std::string Util::GetIMDSToken()
 {
     TRACE_OUT("Entering Util::GetIMDSToken()");
 
@@ -175,7 +176,7 @@ std::string Util::GetIMDSToken(std::string client_id)
         TRACE_ERROR_EXIT("curl_easy_init() failed")
     }
 
-    CURLcode curlRet = curl_easy_setopt(curl, CURLOPT_URL, GetImdsTokenUrl(Constants::AKV_RESOURCE_URL, client_id).c_str());
+    CURLcode curlRet = curl_easy_setopt(curl, CURLOPT_URL, GetImdsTokenUrl(Constants::AKV_RESOURCE_URL).c_str());
     if (curlRet != CURLE_OK)
     {
         TRACE_ERROR_EXIT("curl_easy_setopt() failed")
@@ -617,17 +618,25 @@ std::string Util::GetKeyVaultResponse(const std::string &requestUri,
     return responseStr;
 }
 
-bool Util::doSKR(const std::string &attestation_url, const std::string &nonce, std::string KEKUrl, EVP_PKEY **pkey, const std::string &client_id)
+bool Util::doSKR(const std::string &attestation_url, const std::string &nonce, std::string KEKUrl, EVP_PKEY **pkey, const AkvCredentialSource &akv_credential_source)
 {
     TRACE_OUT("Entering Util::doSKR()");
 
     try
     {
-        std::string attest_token(Util::GetMAAToken(attestation_url, nonce));
-        TRACE_OUT("MAA Token: %s", attest_token.c_str());
+        // Get Akv access token either using IMDS or Service Principal
+        std::string access_token;
+        switch (akv_credential_source)
+        {
+        case AkvCredentialSource::EnvServicePrincipal:
+            access_token = std::move(Util::GetAADToken());
+            break;
+        case AkvCredentialSource::Imds:
+        default:
+            access_token = std::move(Util::GetIMDSToken());
+            break;
+        }
 
-        // std::string access_token = std::move(Util::GetIMDSToken(client_id));
-        std::string access_token = std::move(Util::GetAADToken());
         TRACE_OUT("AkvMsiAccessToken: %s", access_token.c_str());
 
         std::string requestUri = Util::GetKeyVaultSKRurl(KEKUrl);
@@ -863,12 +872,12 @@ std::string Util::WrapKey(const std::string &attestation_url,
                           const std::string &nonce,
                           const std::string &sym_key,
                           const std::string &key_enc_key_url,
-                          const std::string &client_id)
+                          const AkvCredentialSource &akv_credential_source)
 {
     TRACE_OUT("Entering Util::WrapKey()");
 
     EVP_PKEY *pkey = nullptr;
-    if (!Util::doSKR(attestation_url, nonce, key_enc_key_url, &pkey, client_id))
+    if (!Util::doSKR(attestation_url, nonce, key_enc_key_url, &pkey, akv_credential_source))
     {
         std::cerr << "Failed to release the private key" << std::endl;
         exit(-1);
@@ -904,12 +913,12 @@ std::string Util::UnwrapKey(const std::string &attestation_url,
                             const std::string &nonce,
                             const std::string &wrapped_key_base64,
                             const std::string &key_enc_key_url,
-                            const std::string &client_id)
+                            const AkvCredentialSource &akv_credential_source)
 {
     TRACE_OUT("Entering Util::UnwrapKey()");
 
     EVP_PKEY *pkey = nullptr;
-    if (!Util::doSKR(attestation_url, nonce, key_enc_key_url, &pkey, client_id))
+    if (!Util::doSKR(attestation_url, nonce, key_enc_key_url, &pkey, akv_credential_source))
     {
         std::cerr << "Failed to release the private key" << std::endl;
         exit(-1);

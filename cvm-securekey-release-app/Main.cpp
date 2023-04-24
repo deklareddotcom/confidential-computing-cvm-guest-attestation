@@ -35,7 +35,7 @@ enum class Operation
 
 enum class AkvCredentialSource
 {
-    IMDS,
+    Imds,
     EnvServicePrincipal
 };
 
@@ -47,9 +47,8 @@ int main(int argc, char *argv[])
     std::string nonce;
     std::string sym_key;
     std::string key_enc_key_url;
-    std::string client_id;
     Operation op = Operation::None;
-    AkvCredentialSource akvCredentialSource = AkvCredentialSource::EnvServicePrincipal;
+    AkvCredentialSource akv_credential_source = AkvCredentialSource::Imds;
 
     int opt;
     while ((opt = getopt(argc, argv, "a:n:k:c:s:uw")) != -1)
@@ -69,8 +68,16 @@ int main(int argc, char *argv[])
             TRACE_OUT("key_enc_key_url: %s", key_enc_key_url.c_str());
             break;
         case 'c':
-            client_id.assign(optarg);
-            TRACE_OUT("client_id: %s", client_id.c_str());
+            switch (optarg)
+            {
+            case "imds":
+                akv_credential_source = AkvCredentialSource::Imds;
+                break;
+            case "sp":
+                akv_credential_source = AkvCredentialSource::EnvServicePrincipal;
+                break;
+            }
+            TRACE_OUT("akv_credential_source: %d", static_cast<int>(op));
             break;
         case 'u':
             op = Operation::UnwrapKey;
@@ -99,11 +106,11 @@ int main(int argc, char *argv[])
         switch (op)
         {
         case Operation::WrapKey:
-            result = Util::WrapKey(attestation_url, nonce, sym_key, key_enc_key_url, client_id);
+            result = Util::WrapKey(attestation_url, nonce, sym_key, key_enc_key_url, akv_credential_source);
             std::cout << result << std::endl;
             break;
         case Operation::UnwrapKey:
-            result = Util::UnwrapKey(attestation_url, nonce, sym_key, key_enc_key_url, client_id);
+            result = Util::UnwrapKey(attestation_url, nonce, sym_key, key_enc_key_url, akv_credential_source);
             std::cout << result << std::endl;
             break;
         default:
