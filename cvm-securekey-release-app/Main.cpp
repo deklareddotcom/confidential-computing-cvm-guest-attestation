@@ -33,12 +33,6 @@ enum class Operation
     Undefined
 };
 
-enum class AkvCredentialSource
-{
-    Imds,
-    EnvServicePrincipal
-};
-
 int main(int argc, char *argv[])
 {
     TRACE_OUT("Main started");
@@ -48,7 +42,7 @@ int main(int argc, char *argv[])
     std::string sym_key;
     std::string key_enc_key_url;
     Operation op = Operation::None;
-    AkvCredentialSource akv_credential_source = AkvCredentialSource::Imds;
+    Util::AkvCredentialSource akv_credential_source = Util::AkvCredentialSource::Imds;
 
     int opt;
     while ((opt = getopt(argc, argv, "a:n:k:c:s:uw")) != -1)
@@ -71,10 +65,10 @@ int main(int argc, char *argv[])
             switch (optarg)
             {
             case "imds":
-                akv_credential_source = AkvCredentialSource::Imds;
+                akv_credential_source = Util::AkvCredentialSource::Imds;
                 break;
             case "sp":
-                akv_credential_source = AkvCredentialSource::EnvServicePrincipal;
+                akv_credential_source = Util::AkvCredentialSource::EnvServicePrincipal;
                 break;
             }
             TRACE_OUT("akv_credential_source: %d", static_cast<int>(op));

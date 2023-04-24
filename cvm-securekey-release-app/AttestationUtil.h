@@ -74,6 +74,12 @@ inline static void OSSL_BN_TRACE_OUT(const BIGNUM *bn)
 class Util
 {
 public:
+    enum class AkvCredentialSource
+    {
+        Imds,
+        EnvServicePrincipal
+    };
+
     /// <summary>
     /// Convert a base64 encoded string to a vector of bytes.
     /// </summary>
@@ -181,7 +187,7 @@ public:
     static bool doSKR(const std::string &attestation_url,
                       const std::string &nonce, std::string KEKUrl,
                       EVP_PKEY **pkey,
-                      const AkvCredentialSource &akv_credential_source);
+                      const Util::AkvCredentialSource &akv_credential_source);
 
     /// <summary>
     /// Wrap the symmetric key with the public key of the key encryption key (KEK).
@@ -196,7 +202,7 @@ public:
                                const std::string &nonce,
                                const std::string &plainText,
                                const std::string &key_enc_key,
-                               const AkvCredentialSource &akv_credential_source);
+                               const Util::AkvCredentialSource &akv_credential_source);
 
     /// <summary>
     /// Unwrap the symmetric key using the private key of the key encryption key (KEK).
@@ -211,5 +217,5 @@ public:
                                  const std::string &nonce,
                                  const std::string &cipherText,
                                  const std::string &key_enc_key,
-                                 const AkvCredentialSource &akv_credential_source);
+                                 const Util::AkvCredentialSource &akv_credential_source);
 };

@@ -147,7 +147,6 @@ size_t Util::CurlWriteCallback(char *data, size_t size, size_t nmemb, std::strin
 }
 
 /// Retrieve IMDS token retrieval URL for a resource url.
-/// If multiple identities are associated, client_id can be used to select one identity
 /// eg, "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fvault.azure.net"};
 static inline std::string GetImdsTokenUrl(std::string url)
 {
@@ -156,7 +155,7 @@ static inline std::string GetImdsTokenUrl(std::string url)
     oss << "?api-version=" << Constants::IMDS_API_VERSION;
     oss << "&resource=" << Util::url_encode(url);
 
-    auto clientId = std::getenv("IMDS_CLIENT_ID");
+    auto client_id = std::getenv("IMDS_CLIENT_ID");
     if (!client_id.empty())
     {
         oss << "&client_id=" << client_id;
@@ -618,7 +617,11 @@ std::string Util::GetKeyVaultResponse(const std::string &requestUri,
     return responseStr;
 }
 
-bool Util::doSKR(const std::string &attestation_url, const std::string &nonce, std::string KEKUrl, EVP_PKEY **pkey, const AkvCredentialSource &akv_credential_source)
+bool Util::doSKR(const std::string &attestation_url,
+                 const std::string &nonce,
+                 std::string KEKUrl,
+                 EVP_PKEY **pkey,
+                 const Util::AkvCredentialSource &akv_credential_source)
 {
     TRACE_OUT("Entering Util::doSKR()");
 
@@ -628,10 +631,10 @@ bool Util::doSKR(const std::string &attestation_url, const std::string &nonce, s
         std::string access_token;
         switch (akv_credential_source)
         {
-        case AkvCredentialSource::EnvServicePrincipal:
+        case Util::AkvCredentialSource::EnvServicePrincipal:
             access_token = std::move(Util::GetAADToken());
             break;
-        case AkvCredentialSource::Imds:
+        case Util::AkvCredentialSource::Imds:
         default:
             access_token = std::move(Util::GetIMDSToken());
             break;
@@ -872,7 +875,7 @@ std::string Util::WrapKey(const std::string &attestation_url,
                           const std::string &nonce,
                           const std::string &sym_key,
                           const std::string &key_enc_key_url,
-                          const AkvCredentialSource &akv_credential_source)
+                          const Util::AkvCredentialSource &akv_credential_source)
 {
     TRACE_OUT("Entering Util::WrapKey()");
 
@@ -913,7 +916,7 @@ std::string Util::UnwrapKey(const std::string &attestation_url,
                             const std::string &nonce,
                             const std::string &wrapped_key_base64,
                             const std::string &key_enc_key_url,
-                            const AkvCredentialSource &akv_credential_source)
+                            const Util::AkvCredentialSource &akv_credential_source)
 {
     TRACE_OUT("Entering Util::UnwrapKey()");
 
