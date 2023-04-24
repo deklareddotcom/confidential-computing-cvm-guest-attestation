@@ -156,7 +156,7 @@ static inline std::string GetImdsTokenUrl(std::string url)
     oss << "&resource=" << Util::url_encode(url);
 
     auto client_id = std::getenv("IMDS_CLIENT_ID");
-    if (!client_id.empty())
+    if (client_id != nullptr && strlen(client_id) > 0)
     {
         oss << "&client_id=" << client_id;
     }
@@ -627,6 +627,9 @@ bool Util::doSKR(const std::string &attestation_url,
 
     try
     {
+        std::string attest_token(Util::GetMAAToken(attestation_url, nonce));
+        TRACE_OUT("MAA Token: %s", attest_token.c_str());
+
         // Get Akv access token either using IMDS or Service Principal
         std::string access_token;
         switch (akv_credential_source)
