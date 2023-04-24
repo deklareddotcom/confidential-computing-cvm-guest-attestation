@@ -214,10 +214,12 @@ std::string Util::GetIMDSToken()
 
     curl_easy_cleanup(curl);
 
+    TRACE_OUT("Response: %s\n", responseStr.c_str());
+
     json json_object = json::parse(responseStr.c_str());
     std::string access_token = json_object["access_token"].get<std::string>();
 
-    TRACE_OUT("Response: %s\n", access_token.c_str());
+    TRACE_OUT("Access Token: %s\n", access_token.c_str());
 
     TRACE_OUT("Exiting Util::GetIMDSToken()");
 
