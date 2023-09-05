@@ -279,14 +279,14 @@ std::string Util::GetAADToken()
         TRACE_ERROR_EXIT("curl_easy_init() failed");
     }
 
-    TRACE_OUT("Set CURL options")
+    TRACE_OUT("Set CURL options");
 
     // Set CURL options
     curl_easy_setopt(curl, CURLOPT_URL, tokenUrl.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, postData.length());
 
-    TRACE_OUT("Set CURL headers")
+    TRACE_OUT("Set CURL headers");
 
     curl_slist *headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
