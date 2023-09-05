@@ -279,10 +279,14 @@ std::string Util::GetAADToken()
         TRACE_ERROR_EXIT("curl_easy_init() failed");
     }
 
+    TRACE_OUT("Set CURL options")
+
     // Set CURL options
     curl_easy_setopt(curl, CURLOPT_URL, tokenUrl.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, postData.length());
+
+    TRACE_OUT("Set CURL headers")
 
     curl_slist *headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
@@ -294,9 +298,13 @@ std::string Util::GetAADToken()
 
     CURLcode result = curl_easy_perform(curl);
 
+    TRACE_OUT("Fetch AAD Token");
+
     // Free allocated resources
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
+
+    TRACE_OUT("Resoures Freed");
 
     if (result != CURLE_OK)
     {
