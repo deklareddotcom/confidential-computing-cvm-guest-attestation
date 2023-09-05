@@ -901,11 +901,11 @@ int rsa_decrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *dec, size
 #if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3
         // TODO: investiagate why setting padding and md algorithms causing SIGSEGV in OSSL 3.x
 #else
-    if (applyOAEPPadding && EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0) // Set the RSA padding mode to PKCS #1 OAEP
-        handleErrors();
+        // if (applyOAEPPadding && EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0) // Set the RSA padding mode to PKCS #1 OAEP
+        //     handleErrors();
 
-    if (applySHA256MD && EVP_PKEY_CTX_set_rsa_oaep_md(ctx, EVP_sha256()) <= 0) // Set RSA signature scheme to SHA256
-        handleErrors();
+        // if (applySHA256MD && EVP_PKEY_CTX_set_rsa_oaep_md(ctx, EVP_sha256()) <= 0) // Set RSA signature scheme to SHA256
+        //     handleErrors();
 #endif
 
     // Determine the buffer length for the encrypted data
