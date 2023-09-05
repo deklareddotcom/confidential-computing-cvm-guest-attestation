@@ -259,61 +259,72 @@ std::string Util::GetAADToken()
 {
     TRACE_OUT("Entering Util::GetAADToken()");
 
-    auto clientId = std::getenv("AKV_SKR_CLIENT_ID");
-    auto clientSecret = std::getenv("AKV_SKR_CLIENT_SECRET");
-    auto tenantId = std::getenv("AKV_SKR_TENANT_ID");
+    // Retrieve environment variables
+    const char *clientId = std::getenv("AKV_SKR_CLIENT_ID");
+    const char *clientSecret = std::getenv("AKV_SKR_CLIENT_SECRET");
+    const char *tenantId = std::getenv("AKV_SKR_TENANT_ID");
 
+    if (!clientId || !clientSecret || !tenantId)
+    {
+        TRACE_ERROR_EXIT("Environment variables not set");
+    }
+
+    // Construct the token URL and POST data
     std::string tokenUrl = "https://login.microsoftonline.com/" + std::string(tenantId) + "/oauth2/v2.0/token";
     std::string postData = "client_id=" + std::string(clientId) + "&client_secret=" + std::string(clientSecret) + "&grant_type=client_credentials&scope=https://vault.azure.net/.default";
 
     CURL *curl = curl_easy_init();
-    if (curl)
+    if (!curl)
     {
-        curl_easy_setopt(curl, CURLOPT_URL, tokenUrl.c_str());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, postData.length());
+        TRACE_ERROR_EXIT("curl_easy_init() failed");
+    }
 
-        curl_slist *headers = nullptr;
-        headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    // Set CURL options
+    curl_easy_setopt(curl, CURLOPT_URL, tokenUrl.c_str());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, postData.length());
 
-        std::string response;
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+    curl_slist *headers = nullptr;
+    headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-        CURLcode result = curl_easy_perform(curl);
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
+    std::string response;
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
-        if (result == CURLE_OK)
+    CURLcode result = curl_easy_perform(curl);
+
+    // Free allocated resources
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+
+    if (result != CURLE_OK)
+    {
+        TRACE_ERROR_EXIT("curl_easy_perform() failed: " + std::string(curl_easy_strerror(result)));
+    }
+
+    // Parse JSON response
+    try
+    {
+        json jsonResponse = json::parse(response);
+        if (jsonResponse.contains("access_token"))
         {
-            std::string token;
-            json jsonResponse = json::parse(response);
-            if (jsonResponse.contains("access_token"))
-            {
-                token = jsonResponse["access_token"].get<std::string>();
-            }
-            else
-            {
-                TRACE_ERROR_EXIT("access_token not found in AAD auth response")
-            }
-
+            std::string token = jsonResponse["access_token"].get<std::string>();
             TRACE_OUT("Response: %s\n", token.c_str());
             TRACE_OUT("Exiting Util::GetAADToken()");
             return token;
         }
         else
         {
-            TRACE_ERROR_EXIT("curl_easy_perform() failed for URL")
+            TRACE_ERROR_EXIT("access_token not found in AAD auth response");
         }
     }
-    else
+    catch (const std::exception &e)
     {
-        TRACE_ERROR_EXIT("curl_easy_init() failed")
+        TRACE_ERROR_EXIT("JSON parsing error: " + std::string(e.what()));
     }
 
-    std::cerr << "Failed to obtain AKV AAD token" << std::endl;
-    exit(-1);
+    TRACE_ERROR_EXIT("Failed to obtain AKV AAD token");
 }
 
 /// \copydoc Util::GetMAAToken()
@@ -848,7 +859,7 @@ int rsa_encrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *enc, size
         handleErrors();
 
 #if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3
-    // TODO: investiagate why setting padding and md algorithms causing SIGSEGV in OSSL 3.x
+        // TODO: investiagate why setting padding and md algorithms causing SIGSEGV in OSSL 3.x
 #else
     // Set the RSA padding mode to either PKCS #1 OAEP
     if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
@@ -901,7 +912,7 @@ int rsa_decrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *dec, size
         handleErrors();
 
 #if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3
-    // TODO: investiagate why setting padding and md algorithms causing SIGSEGV in OSSL 3.x
+        // TODO: investiagate why setting padding and md algorithms causing SIGSEGV in OSSL 3.x
 #else
     // Set the RSA padding mode to PKCS #1 OAEP
     if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
