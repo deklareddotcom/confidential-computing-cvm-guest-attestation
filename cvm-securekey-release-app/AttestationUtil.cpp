@@ -830,7 +830,7 @@ void handleErrors()
 }
 
 // A function that encrypts a message with a public key using EVP_PKEY_encrypt
-int rsa_encrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *enc, size_t *enclen)
+int rsa_encrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *enc, size_t *enclen, bool applyOAEPPadding = true, bool applySHA256MD = true)
 {
     TRACE_OUT("Entering rsa_encrypt()");
 
@@ -848,14 +848,12 @@ int rsa_encrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *enc, size
         handleErrors();
 
 #if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3
-    // TODO: investiagate why setting padding and md algorithms causing SIGSEGV in OSSL 3.x
+        // TODO: investiagate why setting padding and md algorithms causing SIGSEGV in OSSL 3.x
 #else
-    // Set the RSA padding mode to either PKCS #1 OAEP
-    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
+    if (applyOAEPPadding && EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0) // Set the RSA padding mode to either PKCS #1 OAEP
         handleErrors();
 
-    // Set RSA signature scheme to SHA256
-    if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, EVP_sha256()) <= 0)
+    if (applySHA256MD && EVP_PKEY_CTX_set_rsa_oaep_md(ctx, EVP_sha256()) <= 0) // Set RSA signature scheme to SHA256
         handleErrors();
 #endif
     // Determine the buffer length for the encrypted data
@@ -883,7 +881,7 @@ int rsa_encrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *enc, size
 }
 
 // A function that encrypts a message with a public key using EVP_PKEY_encrypt
-int rsa_decrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *dec, size_t *declen)
+int rsa_decrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *dec, size_t *declen, bool applyOAEPPadding = true, bool applySHA256MD = true)
 {
     TRACE_OUT("Entering rsa_decrypt()");
 
@@ -901,14 +899,12 @@ int rsa_decrypt(EVP_PKEY *pkey, const PBYTE msg, size_t msglen, PBYTE *dec, size
         handleErrors();
 
 #if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3
-    // TODO: investiagate why setting padding and md algorithms causing SIGSEGV in OSSL 3.x
+        // TODO: investiagate why setting padding and md algorithms causing SIGSEGV in OSSL 3.x
 #else
-    // Set the RSA padding mode to PKCS #1 OAEP
-    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
+    if (applyOAEPPadding && EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0) // Set the RSA padding mode to PKCS #1 OAEP
         handleErrors();
 
-    // Set RSA signature scheme to SHA256
-    if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, EVP_sha256()) <= 0) // TODO: can be a parameter
+    if (applySHA256MD && EVP_PKEY_CTX_set_rsa_oaep_md(ctx, EVP_sha256()) <= 0) // Set RSA signature scheme to SHA256
         handleErrors();
 #endif
 
@@ -966,7 +962,7 @@ std::string Util::WrapKey(const std::string &attestation_url,
 
     size_t encrypted_length = 0;
     PBYTE encryptedKey;
-    if (rsa_encrypt(pkey, (const PBYTE)sym_key.c_str(), sym_key.size(), &encryptedKey, &encrypted_length) == -1)
+    if (rsa_encrypt(pkey, (const PBYTE)sym_key.c_str(), sym_key.size(), &encryptedKey, &encrypted_length) == -1, false, false)
     {
         std::cerr << "Failed to wrap the symmetric key: " << std::endl;
         handle_openssl_errors();
@@ -1017,7 +1013,7 @@ std::string Util::UnwrapKey(const std::string &attestation_url,
 
     size_t decrypted_length = 0;
     PBYTE decryptedKey;
-    if (rsa_decrypt(pkey, wrapped_key.data(), wrapped_key.size(), &decryptedKey, &decrypted_length) == -1)
+    if (rsa_decrypt(pkey, wrapped_key.data(), wrapped_key.size(), &decryptedKey, &decrypted_length) == -1, false, false)
     {
         std::cerr << "Failed to unwrap the symmetric key: " << std::endl;
         handle_openssl_errors();
